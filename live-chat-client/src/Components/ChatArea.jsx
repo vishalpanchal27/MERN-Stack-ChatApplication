@@ -26,7 +26,7 @@ const ChatArea = () => {
         socket.current = io("http://localhost:8000");
         if (userData?._id) {
             console.log("join room")
-            socket.current.emit("chatRoom", userData._id);
+            socket.current.emit("joinRoom", userData._id);
         }
 
         socket.current.on("connect_error", (err) => {
@@ -89,15 +89,16 @@ const ChatArea = () => {
             }
         };
 
-        socket.current.on("newMessage", handleNewMessage);
+        socket.current.on("receiveMessage", handleNewMessage); // 🔄 use same event name as backend
+        messageEndRef.current?.scrollIntoView();
 
         return () => {
-            // leave room + cleanup listener
             socket.current.emit("leaveRoom", chatWith._id);
-            socket.current.off("newMessage", handleNewMessage);
+            socket.current.off("receiveMessage", handleNewMessage);
             console.log("return cleanup");
         };
-    }, [messages, socket]);
+    }, [chatWith, socket, messages]); // ✅ no messages here
+
 
 
 
@@ -110,25 +111,38 @@ const ChatArea = () => {
     const eventHandler = (event) => {
         setMessage(event.target.value);
     };
-
     const sendMessage = async () => {
         try {
             if (!message.trim()) return;
-            const config = {
-                headers: { 'Content-Type': 'application/json' }
-            }
-            const time = new Date(); 
+
+            const time = new Date();
+
+            // 1. Save in DB
             const response = await axios.post(`/api/message/send/${chatWith._id}`, {
                 message,
                 time,
                 isRead: true
-            }, config);
-            setMessages((prev) => [...prev, response.data]);
+            }, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const newMsg = response.data;
+
+            // 2. Update UI immediately
+            setMessages((prev) => [...prev, newMsg]);
             setMessage('');
+
+            // 3. Emit socket event (match backend: "newMessage")
+            socket.current.emit("newMessage", {
+                roomId: chatWith._id,
+                senderId: userData._id,
+                ...newMsg
+            });
         } catch (error) {
             console.log('Error sending message:', error.message);
         }
     };
+
 
     // const [onlineUsers, setOnlineUsers] = useState([]);
     // const [lastSeenMap, setLastSeenMap] = useState({});

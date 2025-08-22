@@ -22,7 +22,7 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log("⚡ User connected:", socket.id);
 
-    // join a chat room
+    // join a chat roomfdda
     socket.on("joinRoom", (roomId) => {
         socket.join(roomId);
         console.log(`✅ ${socket.id} joined room ${roomId}`);
@@ -61,11 +61,11 @@ io.on("connection", (socket) => {
         console.log("⚠️ User disconnected:", socket.id);
     });
 });
-
+////asd
 // Attach io to requests
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
-
+//adad
 module.exports = { app, server, io };
