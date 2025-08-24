@@ -1,8 +1,10 @@
+/*
 const generateTokenAndSetCookie = require("../Config/generateToken");
 const User = require("../Models/user.model");
 const bcrypt = require("bcrypt")
 
 const signup = async (req, res) => {
+    console.log("user data = ", req)
     try {
         const { fullName, userName, password, confirmPassword, gender } = req.body;
         if (password !== confirmPassword) {
@@ -33,7 +35,7 @@ const signup = async (req, res) => {
             gender,
             profilePicture: gender === "male" ? boyProfilePic : girlProfilePic,
         })
-
+        console.log("new User is : ",newUser)
         // const payload = {
         //     fullName: newUser.fullName,
         //     userName: newUser.userName,
@@ -106,3 +108,101 @@ const logout = (req, res) => {
 }
 
 module.exports = { login, logout, signup }
+*/
+
+const generateTokenAndSetCookie = require("../Config/generateToken");
+const User = require("../Models/user.model");
+const bcrypt = require("bcrypt");
+const signup = async (req, res) => {
+    try {
+        const { fullName, userName, password, confirmPassword, gender } = req.body;
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ error: "Passwords don't match" });
+        }
+
+        const existingUser = await User.findOne({ userName });
+        if (existingUser) {
+            return res.status(400).json({ error: "Username already exists" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // 👇 Cloudinary URL (if image uploaded)
+        let profilePicture = "";
+        if (req.file) {
+            profilePicture = req.file.path; // Cloudinary secure URL
+        } else {
+            // fallback default avatar
+            profilePicture =
+                gender === "male"
+                    ? `https://avatar.iran.liara.run/public/boy?username=${userName}`
+                    : `https://avatar.iran.liara.run/public/girl?username=${userName}`;
+        }
+
+        const newUser = new User({
+            fullName,
+            userName,
+            password: hashedPassword,
+            gender,
+            profilePicture,
+        });
+
+        const token = generateTokenAndSetCookie(newUser._id, res);
+        await newUser.save();
+
+        res.status(201).json({
+            _id: newUser._id,
+            fullName: newUser.fullName,
+            userName: newUser.userName,
+            gender: newUser.gender,
+            profilePicture: newUser.profilePicture,
+            token,
+        });
+    } catch (error) {
+        console.error("Error in signup controller:", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const login = async (req, res) => {
+    try {
+        const { userName, password } = req.body;
+        const user = await User.findOne({ userName });
+
+        if (!user) {
+            return res.status(400).json({ error: "Invalid username or password" });
+        }
+
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+        if (!isPasswordCorrect) {
+            return res.status(400).json({ error: "Invalid username or password" });
+        }
+
+        const token = generateTokenAndSetCookie(user._id, res);
+
+        res.status(200).json({
+            _id: user._id,
+            fullName: user.fullName,
+            userName: user.userName,
+            gender: user.gender,
+            profilePicture: user.profilePicture, // ✅ fixed
+            token,
+        });
+    } catch (error) {
+        console.error("Error in login controller:", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const logout = (req, res) => {
+    try {
+        res.cookie("jwt", "", { maxAge: 0 });
+        res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+        console.error("Error in logout controller:", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+module.exports = { signup, login, logout };

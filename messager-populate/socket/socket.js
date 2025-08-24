@@ -51,7 +51,6 @@ io.on("connection", (socket) => {
         io.to(objMsg.roomId).emit("receiveMessage", objMsg);
     });
 
-    // test event
     socket.on("updateLiveMessage", (data) => {
         console.log("📢 updateLiveMessage:", data);
         io.emit("receive_message", data);

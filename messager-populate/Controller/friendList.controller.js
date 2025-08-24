@@ -16,14 +16,15 @@ const addFriend = async (req, res) => {
             return res.status(400).json({ message: "user and ownerId must be valid, non-empty values" });
         }
 
-        const isExist = await Friend.findOne({ "user._id": user._id });
+        const isExist = await Friend.findOne({ "user._id": user._id, ownerId });
+
         if (!isExist) {
             const newFriend = new Friend({ user, message, ownerId });
             //console.log(`New friend added: ${JSON.stringify(newFriend)}`);
             await newFriend.save();
             res.status(201).json(newFriend);
         } else {
-            res.status(400).json({ error: "Friend already exists" });
+            res.status(400).json({ error: `Friend already exists ${user._id}` });
         }
     } catch (error) {
         console.log("Error in addFriend controller:", error.message);

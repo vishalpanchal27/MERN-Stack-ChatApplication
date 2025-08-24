@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../redux/Slices/themeSlice';
 import axios from 'axios';
+import GlobalVariable from '../Globals/GlobalVariable';
 
 const Sidebar = () => {
     const theme = useSelector((state) => state.theme);
@@ -24,7 +25,7 @@ const Sidebar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const loggedInUser = JSON.parse(localStorage.getItem("userData"));
-
+    console.log("my data after loged in", loggedInUser)
     const handleAccount = () => navigate('welcome');
     const handleOnlineUser = () => navigate('online-users');
     const handleGroups = () => navigate('groups');
@@ -69,13 +70,12 @@ const Sidebar = () => {
         addFriend()
     }, [chatList]);
 
-
     return (
         <div className='sidebar-container'>
             <div className={`sb-header ${theme ? "" : "dark-theme"}`}>
-                <IconButton onClick={handleAccount}>
-                    <AccountCircleIcon className={theme ? "iconTextDark" : "iconTextLight"} />
-                </IconButton>
+                <div>
+                        <img className="con-imageIcon" src={GlobalVariable.loggedInUser.profilePicture} alt="" />
+                </div>
                 <div>
                     <IconButton onClick={handleOnlineUser}>
                         <PersonAddIcon className={theme ? "iconTextDark" : "iconTextLight"} />

@@ -31,6 +31,7 @@ const LoginPage = ({ setLogedIn }) => {
             )
             console.log(response)
             navigate('/app/welcome')
+            console.log("my profile data", response.data)
             localStorage.setItem("userData", JSON.stringify(response.data));
             setLoading(false)
         } catch (err) {
